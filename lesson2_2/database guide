@@ -1,0 +1,31 @@
+insert(key, value):
+    This adds a line of info to the db text file
+
+check_for_duplicate(key, value)
+    Self explanitory, looks to see if they key, value pair already exists
+
+grabInfo():
+    Prompts for input to use for the key and value
+    Use this for debugging
+    Should have unique code that is custom to specific desired data
+
+search_for(key)
+    Searches the text file for an existing key, returns the value
+
+edit_selected(key, value)
+    This finds specified key, value pair, and updates them with new input
+
+delete_selected(key)
+    finds existing key, deletes the key, value pair
+
+get_user_input()
+    Prompts for key and value
+    Use for debugging
+    (might be broken)
+
+get_key()
+    prompts for just the key and saves the value
+
+get_value()
+    same thing but value
+
