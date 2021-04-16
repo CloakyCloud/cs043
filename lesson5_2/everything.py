@@ -1,18 +1,14 @@
 import wsgiref.simple_server
 import urllib.parse
 import sqlite3
+import http.cookies
 
 connection = sqlite3.connect('users.db')
 cursor = connection.cursor()
 
 
 def application(environ, start_response):
-    headers = [
-        ('Content-Type', 'text/plain; charset=utf-8'),
-        ('Set-Cookie', 'session=ahmed'),
-        ("Set-Cookie", 'weight=153'),
-        ('Set-Cookie', 'shoe_size=10')
-    ]
+    headers = [('Content-Type', 'text/plain; charset=utf-8')]
 
     path = environ['PATH_INFO']
     params = urllib.parse.parse_qs(environ['QUERY_STRING'])
@@ -21,32 +17,48 @@ def application(environ, start_response):
 
     if path == '/register' and un and pw:
         user = cursor.execute('SELECT * FROM users WHERE username = ?', [un]).fetchall()
-
         if user:
             start_response('200 OK', headers)
             return ['Sorry, username {} is taken'.format(un).encode()]
         else:
             connection.execute('INSERT INTO users VALUES (?, ?)', [un, pw])
             connection.commit()
-
+            headers.append(('Set-Cookie', 'session={}:{}'.format(un, pw)))
             start_response('200 OK', headers)
-            return ['Username {} been successfully registered'.format(un).encode()]
-
-            connection.execute('INSERT INTO users VALUES (?, ?)', [un, pw])
-            connection.commit()
-            ### YOUR CODE HERE TO INSERT A NEW USERNAME AND PASSWORD ###
-            ### AND COMMIT THE INSERT ###
-            start_response('200 OK', headers)
-            return ['Username {} was successfully registered'.format(un).encode()]
+            return ['Congratulations, username {} been successfully registered'.format(un).encode()]
 
     elif path == '/login' and un and pw:
         user = cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', [un, pw]).fetchall()
         if user:
+            headers.append(('Set-Cookie', 'session={}:{}'.format(un, pw)))
             start_response('200 OK', headers)
             return ['User {} successfully logged in'.format(un).encode()]
         else:
             start_response('200 OK', headers)
             return ['Incorrect username or password'.encode()]
+
+    elif path == '/logout':
+        headers.append(('Set-Cookie', 'session=0; expires=Thu, 01 Jan 1970 00:00:00 GMT'))
+        start_response('200 OK', headers)
+        return ['Logged out'.encode()]
+
+    elif path == '/account':
+        start_response('200 OK', headers)
+
+        if 'HTTP_COOKIE' not in environ:
+            return ['Not logged in'.encode()]
+
+        cookies = http.cookies.SimpleCookie()
+        cookies.load(environ['HTTP_COOKIE'])
+        if 'session' not in cookies:
+            return ['Not logged in'.encode()]
+
+        [un, pw] = cookies['session'].value.split(':')
+        user = cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', [un, pw]).fetchall()
+        if user:
+            return ['Logged in: {}'.format(un).encode()]
+        else:
+            return ['Not logged in'.encode()]
 
     else:
         start_response('404 Not Found', headers)
