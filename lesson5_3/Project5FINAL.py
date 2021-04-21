@@ -44,7 +44,7 @@ def application(environ, start_response):
             return ['User {} successfully logged in. <a href="/account">Account</a>'.format(un).encode()]
         else:
             start_response('200 OK', headers)
-            return ['Incorrect username or password <a href="/">Back</a>'.encode()]
+            return ['Incorrect username or password <a href="/">Back</a>'   .encode()]
 
     elif path == '/logout':
         headers.append(('Set-Cookie', 'session=0; expires=Thu, 01 Jan 1970 00:00:00 GMT'))
@@ -60,7 +60,7 @@ def application(environ, start_response):
         cookies = http.cookies.SimpleCookie()
         cookies.load(environ['HTTP_COOKIE'])
         if 'session' not in cookies:
-            return ['session not in cookies <a href="/">Login</a>'.encode()]
+            return ['Not logged in <a href="/">Login</a>'.encode()]
 
         [un, pw] = cookies['session'].value.split(':')
         user = cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', [un, pw]).fetchall()
@@ -74,24 +74,14 @@ def application(environ, start_response):
             # [INSERT CODE FOR COOKIES HERE]
             cookies = http.cookies.SimpleCookie()
             if 'HTTP_COOKIE' in environ:
-                cookies = http.cookies.SimpleCookie()
-                cookies.load(environ['HTTP_COOKIE'])
+                if 'correct' in cookies:
+                    correct = int(cookies['score'].value.split(':')[0])
+                if 'wrong' in cookies:
+                    wrong = int(cookies['score'].value)
 
-                if 'correct' in cookies and 'wrong' in cookies:
-                    correct = int(cookies['correct'].value)
-                    wrong = int(cookies['wrong'].value)
-                    print(wrong)
-                    print(correct)
-                else:
-                    print('correct and wrong are not in cookies')
                     correct = 0
-                    wrong = 0
-
-
             else:
                 correct = 0
-                wrong = 0
-                print('this went wrong')
 
 
 
@@ -114,20 +104,15 @@ def application(environ, start_response):
                 print(res)
 
 
+
+
+
                 if f1 * f2 == answer:
-                    page += '<p style="background-color: lightgreen">Correct, {} X {} = {}</p>'.format(str(f1), str(f2), str(answer))
-                    if 'correct' in cookies:
-                        correct = correct + 1
-                        headers.append(('Set-Cookie', 'correct={}'.format(correct)))
-
-
-
-
-
+                    page += '<p style="background-color: lightgreen">Correct, {} X {} = {}</p>'.format(str(f1), str(f2), str(answer).encode())
+                    correct = correct + 1
                 else:
-                    page += '<p style="background-color: red">Incorrect, {} X {} does not = {}</p>'.format(str(f1), str(f2), str(answer))
+                    page += '<p style="background-color: red">Incorrect, {} X {} does not = {}</p>'.format(str(f1), str(f2), str(answer).encode())
                     wrong = wrong + 1
-                    headers.append(('Set-Cookie', 'wrong={}'.format(wrong)))
 
 
 
@@ -135,8 +120,8 @@ def application(environ, start_response):
                 correct = 0
                 wrong = 0
 
-            headers.append(('Set-Cookie', 'correct={}'.format(correct)))
-            headers.append(('Set-Cookie', 'wrong={}'.format(wrong)))
+            headers.append(('Set-Cookie', 'correct={}'.format(correct, wrong)))
+            headers.append(('Set-Cookie', 'wrong={}'.format(correct, wrong)))
 
             f1 = random.randrange(10) + 1
             f2 = random.randrange(10) + 1
@@ -196,7 +181,6 @@ def application(environ, start_response):
             Correct: {}<br>
             Wrong: {}<br>
             <a href="/account?reset=true">Reset</a>
-            <a href="/logout">Logout</a>
             </body></html>'''.format(correct, wrong)
 
             return [page.encode()]
